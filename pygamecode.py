@@ -1,4 +1,6 @@
 import pygame
+import sys
+from pygame.locals import *
 pygame.init()
 
 #create colors
@@ -9,54 +11,72 @@ green = (0, 255, 0)
 blue = (0, 0, 255)
 darkblue = (71, 76, 149)
 
-#position vars
-x_pos = 0
-y_pos = 0
-
 gameDisplay = pygame.display.set_mode((800,600))
 
+bg = pygame.image.load('bg.bmp')
+# Scaling background image
+bg = pygame.transform.scale(bg, (1400,600))
+
 pygame.display.set_caption('Adventure!')
+
+clock = pygame.time.Clock()
+
+class Sprite:
+    def __init__(self,x,y):
+        self.x = 0
+        self.y = 250
+
+        self.width = 150
+        self.height = 120
+
+        self.char = pygame.image.load('char.bmp')
+        self.smaller_char = pygame.transform.scale(self.char, (self.width,self.height))
+        
+        self.speed = 10
+
+    def renderSprite(self):
+        gameDisplay.blit(self.smaller_char, (self.x,self.y))
+
+    def update(self):
+        keys = pygame.key.get_pressed()
+
+        if keys[K_w]:
+            self.y -= self.speed
+            if self.y < 200:
+                self.y = 200
+        elif keys[K_s]:
+            self.y += self.speed
+            if self.y > 300:
+                self.y = 300
+        elif keys[K_a]:
+            self.x -= self.speed
+            if self.x < 0:
+                self.x = 0
+        elif keys[K_d]:
+            self.x += self.speed
+            if self.x > 800:
+                self.x = 800
+
+player = Sprite(0,250)
+
+spritesheet = pygame.image.load("spritesheet.bmp")
+num_images = 10
+current_imgs = 0
 
 gameExit = False
 while not gameExit:
     for event in pygame.event.get():
-	    if event.type == pygame.QUIT:
-		    gameExit = True
+        if event.type == pygame.QUIT:
+            gameExit = True
 
+    gameDisplay.blit(bg, (0,0))
+    
+    player.renderSprite()
+    player.update()
 
-    gameDisplay.fill(darkblue)
-    pygame.draw.rect(gameDisplay, white, [300,300, 10, 100])	
-    pygame.draw.rect(gameDisplay, white, [500,300, 10, 100])
-    pygame.draw.rect(gameDisplay, white, [300,100, 10, 100])
-    pygame.draw.rect(gameDisplay, white, [500,100, 10, 100])
-    pygame.draw.rect(gameDisplay, white, [300,500, 10, 100])
-    pygame.draw.rect(gameDisplay, white, [500,500, 10, 100])
-    pygame.draw.rect(gameDisplay, white, [400,500, 5, 100])
-    pygame.draw.rect(gameDisplay, white, [400,200, 5, 100])
-    if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_UP or event.key == pygame.K_DOWN:	
-            gameDisplay.fill(darkblue)
-            pygame.draw.rect(gameDisplay, white, [300,200, 10, 100])	
-            pygame.draw.rect(gameDisplay, white, [500,200, 10, 100])
-            pygame.draw.rect(gameDisplay, white, [300,0, 10, 100])
-            pygame.draw.rect(gameDisplay, white, [500,0, 10, 100])
-            pygame.draw.rect(gameDisplay, white, [300,400, 10, 100])
-            pygame.draw.rect(gameDisplay, white, [500,400, 10, 100])
-            pygame.draw.rect(gameDisplay, white, [400,300, 5, 100])
-            pygame.draw.rect(gameDisplay, white, [400,100, 5, 100])
+    clock.tick(60) # 60 fps cap
 
-    if event.type == pygame.KEYDOWN:
-	    if event.key == pygame.K_LEFT:
-		    x_pos -= 10
-	    if event.key == pygame.K_RIGHT:
-		    x_pos += 10
-	    if event.key == pygame.K_UP:
-		    y_pos -= 10
-	    if event.key == pygame.K_DOWN:
-		    y_pos += 10
-
-    gameDisplay.fill(white, rect=[x_pos,y_pos, 20,20])
-    pygame.display.update()	
+    pygame.display.flip()
 
 #required
 pygame.quit()
