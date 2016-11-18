@@ -4,50 +4,57 @@ import random
 from pygame.locals import *
 pygame.init()
 
-gameDisplay = pygame.display.set_mode((800,600))
+screen_width = 1280
+screen_height = 720
+
+gameDisplay = pygame.display.set_mode((screen_width,screen_height))
 
 pygame.display.set_caption('Adventure!')
 
 clock = pygame.time.Clock()
 
-bg = pygame.image.load('grass.bmp')
+bg = pygame.image.load('dungeon.bmp')
 # Scaling background image
-bg = pygame.transform.scale(bg,(1800,600))
+bg = pygame.transform.scale(bg,(1280,720))
 
 class EnemySprite(pygame.sprite.Sprite):
     def __init__(self, x, y):
-        self.enemyx = 500
-        self.enemyy = 250
+        pygame.sprite.Sprite.__init__(self)
+        self.enemyx = 540
+        self.enemyy = 0
 
-        self.enemywidth = 300
+        self.enemywidth = 200
         self.enemyheight = 180
 
-        self.enemy = pygame.image.load('enemy.bmp')
+        self.enemy = pygame.image.load('monster.gif').convert_alpha()
         self.enemy = pygame.transform.scale(self.enemy, (self.enemywidth,self.enemyheight))
         
-        self.enemypos = self.enemy.get_rect()
+        self.rect = self.enemy.get_rect()
         # x and y coordinates, respectively
-        self.enemyspeed = [random.randint(1,6),random.randint(1,6)]
+        self.enemyspeed = [0,random.randint(1,6)]
 
     def renderEnemy(self):
-        gameDisplay.blit(self.enemy, (self.enemyx,self.enemyy), self.enemypos)
+        gameDisplay.blit(self.enemy, (self.enemyx,self.enemyy), self.rect)
 
     def move(self):
         # Moving enemy
-        self.enemypos.move_ip(self.enemyspeed)
-        if self.enemypos[0] > 800 or self.enemypos[0] < 0:
-            self.enemyspeed[0] = -self.enemyspeed[0]
+        self.rect.move_ip(self.enemyspeed)
+        if self.rect[1] > 1280 or self.rect[1] < 0:
+            self.enemyspeed[1] = -self.enemyspeed[1]
 
 
-class Sprite (pygame.sprite.Sprite):
+class GunSprite (pygame.sprite.Sprite):
     def __init__(self,x,y):
-        self.x = 0
-        self.y = 250
+        pygame.sprite.Sprite.__init__(self)
 
-        self.width = 150
-        self.height = 120
+        self.width = 300
+        self.height = 180
+
+        # Making sure gun sprite starts in the middle bottom of screen
+        self.x = 480
+        self.y = screen_height - self.height
         
-        self.char = pygame.image.load('char.bmp')
+        self.char = pygame.image.load('gun.bmp')
         self.char = pygame.transform.scale(self.char, (self.width,self.height))
 
         self.speed = 10
@@ -58,27 +65,37 @@ class Sprite (pygame.sprite.Sprite):
     def update(self):
         keys = pygame.key.get_pressed()
 
-        if keys[K_w]:
-            self.y -= self.speed
-            if self.y > 600:
-                self.y = 600
-        elif keys[K_s]:
-            self.y += self.speed
-            if self.y < 0:
-                self.y = 0
-        elif keys[K_a]:
+        #if keys[K_w]:
+            #self.y -= self.speed
+            #if self.y > 600:
+                #self.y = 600
+        #elif keys[K_s]:
+            #self.y += self.speed
+            #if self.y < 0:
+                #self.y = 0
+        if keys[K_a]:
             self.x -= self.speed
-            if self.x < 0:
-                self.x = 0
+            if self.x < 220:
+                self.x = 220
         elif keys[K_d]:
             self.x += self.speed
-            if self.x > 730:
-                self.x = 730
+            if self.x > 800:
+                self.x = 800
 
 
 def main():
-    player = Sprite(0,250)
-    enemy = EnemySprite(500, 250)
+
+    enemy_list = pygame.sprite.Group()
+
+    for i in range(10):
+        enemy = EnemySprite(500, 250)
+
+        enemy.rect.x = random.randrange(screen_width)
+        enemy.rect.y = random.randrange(screen_height)
+
+        enemy_list.add(enemy)
+
+    player = GunSprite(0,250)
 
     spritesheet = pygame.image.load("spritesheet.bmp")
     num_images = 10
