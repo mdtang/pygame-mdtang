@@ -31,16 +31,16 @@ class EnemySprite(pygame.sprite.Sprite):
         
         self.rect = self.enemy.get_rect()
         # x and y coordinates, respectively
-        self.enemyspeed = [0,random.randint(1,6)]
+        self.enemyspeed = [0,-random.randint(4,6)]
 
     def renderEnemy(self):
         gameDisplay.blit(self.enemy, (self.enemyx,self.enemyy), self.rect)
 
     def move(self):
         # Moving enemy
-        self.rect.move_ip(self.enemyspeed)
-        if self.rect[1] > 1280 or self.rect[1] < 0:
-            self.enemyspeed[1] = -self.enemyspeed[1]
+        #self.rect.move_ip(self.enemyspeed)
+        self.enemyx = self.enemyx + self.enemyspeed[0]
+        self.enemyy = self.enemyy - self.enemyspeed[1]
 
 
 class GunSprite (pygame.sprite.Sprite):
@@ -84,7 +84,7 @@ class GunSprite (pygame.sprite.Sprite):
 
 
 def main():
-
+    '''
     enemy_list = pygame.sprite.Group()
 
     for i in range(10):
@@ -94,7 +94,8 @@ def main():
         enemy.rect.y = random.randrange(screen_height)
 
         enemy_list.add(enemy)
-
+'''
+    enemy = EnemySprite(500,250)
     player = GunSprite(0,250)
 
     spritesheet = pygame.image.load("spritesheet.bmp")
