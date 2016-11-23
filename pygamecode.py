@@ -4,6 +4,7 @@ import random
 from pygame.locals import *
 pygame.init()
 
+white = (255, 255, 255)
 screen_width = 1280
 screen_height = 720
 
@@ -13,8 +14,8 @@ pygame.display.set_caption('DOOOOOOOOOOOOOOOM!!!!')
 
 clock = pygame.time.Clock()
 
+# loading and resizing background image
 bg = pygame.image.load('dungeon.bmp')
-# Scaling background image
 bg = pygame.transform.scale(bg,(screen_width,screen_height))
 
 
@@ -22,13 +23,19 @@ class PlayerSprite(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
-        self.width = 250
-        self.height = 150
+        self.width = 140
+        self.height = 140
         
         self.image = pygame.image.load('gun.bmp')
         self.image = pygame.transform.scale(self.image, (self.width,self.height))
 
         self.rect = self.image.get_rect()
+
+        # drawing circle for improved collision
+        # radius is half of diameter/width
+        self.radius = 70
+
+        #pygame.draw.circle (self.image, white, self.rect.center, self.radius)
 
         # centerx and bottom from pygame.Rect documentation
         self.rect.centerx = screen_width * .5
@@ -72,10 +79,14 @@ class EnemySprite(pygame.sprite.Sprite):
         self.enemywidth = 150
         self.enemyheight = 135
 
-        self.image = pygame.image.load('monster.gif').convert_alpha()
+        self.image = random.choice(enemyimages)
+
         self.image = pygame.transform.scale(self.image, (self.enemywidth,self.enemyheight))
         
         self.rect = self.image.get_rect()
+        
+        self.radius = int(self.rect.width * .35)
+        # pygame.draw.circle(self.image, white, self.rect.center, self.radius)
 
         # declare variables for random positions for enemy sprites
         self.rect.x = random.randrange(screen_width - self.rect.width)
@@ -119,6 +130,12 @@ class BulletSprite(pygame.sprite.Sprite):
             # removes bullet sprite
             self.kill()
 
+enemyimages = []
+enemylist = ['monster1.gif', 'monster2.gif', 'monster3.gif', 'monster4.gif']
+
+for image in enemylist:
+    enemyimages.append(pygame.image.load(image).convert_alpha())
+
 # sprite groups created
 allsprites = pygame.sprite.Group()
 enemymobs = pygame.sprite.Group()
@@ -144,6 +161,8 @@ for i in enemycount:
 
 clock.tick(60) # 60 fps cap
 
+score = 0 
+
 gameExit = False
 while not gameExit:
     for event in pygame.event.get():
@@ -156,8 +175,8 @@ while not gameExit:
     # updating sprites
     allsprites.update()
 
-    # check for player-enemy sprite collision (creates list)
-    hits = pygame.sprite.spritecollide(player,enemymobs, False)
+    # check for player-enemy (circle sprites) sprite collision (creates list)
+    hits = pygame.sprite.spritecollide(player,enemymobs, False, pygame.sprite.collide_circle)
     if hits:
         #myFont = pygame.font.Font(None, 100)
         #label = myFont.render("GAME OVER", 1, (255,255,0))
@@ -168,6 +187,7 @@ while not gameExit:
     # check for enemy-bullet sprite collision
     bullethits = pygame.sprite.groupcollide(enemymobs,bullets, True, True)
     for hits in bullethits:
+        #hits += 1
         # spawn new enemy mob
         mob = EnemySprite()
         allsprites.add(mob)
