@@ -20,20 +20,35 @@ clock = pygame.time.Clock()
 bg = pygame.image.load('dungeon.bmp')
 bg = pygame.transform.scale(bg,(screen_width,screen_height))
 
-def display_text(surface, text, size, x, y):
-    font = pygame.font.Font(None, size)
+def displaytext(surface, text, size, x, y):
+    # free font downloded from dafont.com
+    font = pygame.font.Font("AmazDooMLeft.ttf", size)
     text_surface = font.render(text, True, white)
     text_rect = text_surface.get_rect()
     text_rect.midtop = x, y
     surface.blit(text_surface, text_rect)
 
-def display_lives(surface, x, y, lives, image):
+def displaylives(surface, x, y, lives, image):
     for i in range(lives):
         image_rect = image.get_rect()
         # 50 is for the space between each sprite
         image_rect.x = x + 50 * i
         image_rect.y = y
         surface.blit(image, image_rect)
+
+def gameoverscreen():
+    # calling display_text function to display gameover screen
+    displaytext(gameDisplay, "DOOOOOOOOOOOOOOOM!", 80, screen_width / 2, screen_height / 4)
+    displaytext(gameDisplay, "Left and right arrow keys to move, spacebar to shoot",
+                30, screen_width / 2, screen_height / 2)
+    displaytext(gameDisplay, "Press any key to begin", 30, screen_width / 2, screen_height - 200)
+    pygame.display.flip()
+    waiting = True
+    while waiting:
+        clock.tick(60)
+        for event in pygame.event.get():
+            if event.type == pygame.KEYUP:
+                waiting = False
 
 class PlayerSprite(pygame.sprite.Sprite):
     def __init__(self):
@@ -68,7 +83,8 @@ class PlayerSprite(pygame.sprite.Sprite):
         self.lastshot = pygame.time.get_ticks()
 
         self.lives = 3
-
+        
+        # initializing variables when player is hit
         self.hidden = False
         self.hidetimer = pygame.time.get_ticks()
 
@@ -245,38 +261,41 @@ for sound in soundslist:
 # loading continuous background music
 pygame.mixer.music.load('bgmusic.wav')
 
-# creating sprite groups
-allsprites = pygame.sprite.Group()
-enemymobs = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
-
-player = PlayerSprite()
-allsprites.add(player)
-
-# creating list of random number of enemies from 8 to 20 and shuffling for randomness
-enemycount = list(range(8, 20))
-random.shuffle(enemycount)
-
-for i in enemycount:
-    mob = EnemySprite()
-    # updating enemy sprites into allsprites
-    allsprites.add(mob)
-    # adding enemy sprites into sprites group
-    enemymobs.add(mob)
-
-
 clock.tick(60) # 60 fps cap
-
-# initialize score
-score = 0 
 
 # infinite looping background music
 pygame.mixer.music.play(loops= -1)
 
+gameOver = True
 gameExit = False
 while not gameExit:
+    if gameOver:
+        gameoverscreen()
+        gameOver = False
+        # initializing score
+        score = 0 
+        # creating sprite groups
+        allsprites = pygame.sprite.Group()
+        enemymobs = pygame.sprite.Group()
+        bullets = pygame.sprite.Group()
+
+        player = PlayerSprite()
+        allsprites.add(player)
+
+        # creating list of random number of enemies from 8 to 20 and shuffling for randomness
+        enemycount = list(range(8, 20))
+        random.shuffle(enemycount)
+
+        for i in enemycount:
+            mob = EnemySprite()
+            # updating enemy sprites into allsprites
+            allsprites.add(mob)
+            # adding enemy sprites into sprites group
+            enemymobs.add(mob)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            # ends program
             gameExit = True
     
     # updating sprites
@@ -310,16 +329,15 @@ while not gameExit:
         enemymobs.add(mob)
 
     if player.lives == 0 and not player_expl.alive():
-        gameExit = True
-
+        gameOver = True
 
     # rendering
     gameDisplay.blit(bg,(0,0))
     allsprites.draw(gameDisplay)
     # drawing number of lives on top left of screen
-    display_lives(gameDisplay, 10, 5, player.lives, player.smallimage)
+    displaylives(gameDisplay, 10, 5, player.lives, player.smallimage)
     # text is score
-    display_text(gameDisplay, str(score), 30, screen_width * .5, 10)
+    displaytext(gameDisplay, str(score), 30, screen_width * .5, 10)
 
     # displaying
     pygame.display.flip()
