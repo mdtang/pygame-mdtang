@@ -3,27 +3,54 @@ import time
 import random
 from pygame.locals import *
 
-pygame.mixer.init()
-pygame.init()
-
 white = (255, 255, 255)
+red = (255, 0, 0)
 screen_width = 1280
 screen_height = 720
-
+# free font downloaded from dafont.com
+font_name = 'AmazDooMLeft.ttf'
+scorefilename = 'highscore.txt'
 gameDisplay = pygame.display.set_mode((screen_width,screen_height))
-
-pygame.display.set_caption('DOOOOOOOOOOOOOOOM!!!!')
-
 clock = pygame.time.Clock()
+
 
 # loading and resizing background image
 bg = pygame.image.load('dungeon.bmp')
 bg = pygame.transform.scale(bg,(screen_width,screen_height))
 
+scorefile = open(scorefilename, 'w')
+try:
+    highscore = int(scorefile.read())
+except:
+    highscore = 0
+
+# creating sprite groups
+allsprites = pygame.sprite.Group()
+enemymobs = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
+
+# loading explosion animation images with a dictionary
+expl_anim = {}
+expl_anim['enemy'] = []
+expl_anim['player'] = []
+
+for i in range(15):
+    enemy_files = str(i) + '.bmp'
+    image = pygame.image.load(enemy_files)
+    image.set_colorkey(white)
+    image = pygame.transform.scale(image, (100,100))
+    expl_anim['enemy'].append(image)
+
+for i in range(14):
+    player_files = 'player' + str(i) + '.bmp'
+    image = pygame.image.load(player_files)
+    image.set_colorkey(white)
+    image = pygame.transform.scale(image, (200, 200))
+    expl_anim['player'].append(image)
+
 def displaytext(surface, text, size, x, y):
-    # free font downloded from dafont.com
-    font = pygame.font.Font("AmazDooMLeft.ttf", size)
-    text_surface = font.render(text, True, white)
+    font = pygame.font.Font(font_name, size)
+    text_surface = font.render(text, True, red)
     text_rect = text_surface.get_rect()
     text_rect.midtop = x, y
     surface.blit(text_surface, text_rect)
@@ -36,12 +63,25 @@ def displaylives(surface, x, y, lives, image):
         image_rect.y = y
         surface.blit(image, image_rect)
 
-def gameoverscreen():
+def gameoverscreen(score):
+    gameDisplay.blit(bg,(0,0))
     # calling display_text function to display gameover screen
-    displaytext(gameDisplay, "DOOOOOOOOOOOOOOOM!", 80, screen_width / 2, screen_height / 4)
+    displaytext(gameDisplay, "DOOOOOOOOOOOOOOOM!", 120, screen_width / 2, screen_height / 4)
+
     displaytext(gameDisplay, "Left and right arrow keys to move, spacebar to shoot",
-                30, screen_width / 2, screen_height / 2)
-    displaytext(gameDisplay, "Press any key to begin", 30, screen_width / 2, screen_height - 200)
+                50, screen_width / 2, screen_height / 2)
+
+    displaytext(gameDisplay, "Press any key to begin", 50, screen_width / 2, screen_height - 180)
+
+    if score > highscore:
+        displaytext(gameDisplay,"NEW High Score!!!", 40, screen_width / 2, screen_height - 290)
+        scorefile.write(str(highscore))
+        global highscore
+        highscore = score
+        displaytext(gameDisplay,"Score:" + str(score), 40, screen_width / 2, screen_height - 250)
+    else:
+        displaytext(gameDisplay,"Score:" + str(score), 40, screen_width / 2, screen_height - 290)
+        displaytext(gameDisplay,"Highest Score:" + str(highscore), 40, screen_width / 2, screen_height - 250)
     pygame.display.flip()
     waiting = True
     while waiting:
@@ -88,10 +128,12 @@ class PlayerSprite(pygame.sprite.Sprite):
         self.hidden = False
         self.hidetimer = pygame.time.get_ticks()
 
+        self.gun_sound = pygame.mixer.Sound("gunsound.wav")
+
     def update(self):
         self.speedX = 0
-        # hides player for 2 seconds 
-        if self.hidden and pygame.time.get_ticks() - self.hide_timer > 2000:
+        # hides player for 1 second
+        if self.hidden and pygame.time.get_ticks() - self.hide_timer > 1000:
             self.hidden = False
             # restore player to original location
             self.rect.centerx = screen_width * .5
@@ -103,7 +145,8 @@ class PlayerSprite(pygame.sprite.Sprite):
         if keys[K_RIGHT]:
             self.speedX = 20
         if keys[K_SPACE]:
-            self.shoot()
+            if self.hidden == False:
+                self.shoot()
         self.rect.x += self.speedX
         
         # creating walls so player will not leave edges of screen
@@ -125,29 +168,36 @@ class PlayerSprite(pygame.sprite.Sprite):
             bullets.add(bullet)
 
             #adding gun sound only when prompted
-            gun_sound.play()
+            self.gun_sound.play()
     
     def hide(self):
         # temporarily hide player when hit
         self.hidden = True
         self.hide_timer = pygame.time.get_ticks()
         # hide player below screen
-        self.rect.center = (screen_width * 0.5, screen_height + 300)
+        self.rect.center = (screen_width * 0.5, screen_height + 1000)
 
 class EnemySprite(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
-        self.enemywidth = 120
-        self.enemyheight = 100
+        self.enemywidth = 140
+        self.enemyheight = 130
         
+        # loading multiple enemy images
+        self.enemyimages = []
+        self.enemylist = ['monster1.gif', 'monster2.gif', 'monster3.gif', 'monster4.gif', 'monster5.gif']
+
+        for image in self.enemylist:
+            self.enemyimages.append(pygame.image.load(image).convert_alpha())
+
         # randomly choose enemy images
-        self.image = random.choice(enemyimages)
+        self.image = random.choice(self.enemyimages)
 
         self.image = pygame.transform.scale(self.image, (self.enemywidth,self.enemyheight))
-        
+
         self.rect = self.image.get_rect()
-        
+
         self.radius = int(self.rect.width * .35)
         # pygame.draw.circle(self.image, white, self.rect.center, self.radius)
 
@@ -156,7 +206,8 @@ class EnemySprite(pygame.sprite.Sprite):
         self.rect.y = random.randrange(-100, -40)
 
         self.speedX = random.randrange(-2,2)
-        self.speedY = random.randrange(5,10)
+        self.speedY = random.randrange(3,12)
+
 
     def update(self):
         self.rect.y += self.speedY
@@ -224,126 +275,115 @@ class ExplosionSprites(pygame.sprite.Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.center = center
 
-# loading multiple enemy images
-enemyimages = []
-enemylist = ['monster1.gif', 'monster2.gif', 'monster3.gif', 'monster4.gif']
+def main():
+    pygame.mixer.init()
+    pygame.init()
 
-for image in enemylist:
-    enemyimages.append(pygame.image.load(image).convert_alpha())
+    pygame.display.set_caption('DOOOOOOOOOOOOOOOM!!!!')
 
-# loading explosion animation images with a dictionary
-expl_anim = {}
-expl_anim['enemy'] = []
-expl_anim['player'] = []
+    # loading different monster death sounds
+    monster_sounds = []
+    soundslist = ['enemysound1.wav','enemysound2.wav','enemysound3.wav']
+    for sound in soundslist:
+        monster_sounds.append(pygame.mixer.Sound(sound))
 
-for i in range(15):
-    filename = '{}.bmp'.format(i)
-    image = pygame.image.load(filename)
-    image.set_colorkey(white)
-    image = pygame.transform.scale(image, (100,100))
-    expl_anim['enemy'].append(image)
 
-for i in range(14):
-    filename = 'player{}.bmp'.format(i)
-    image = pygame.image.load(filename)
-    image.set_colorkey(white)
-    image = pygame.transform.scale(image, (200, 200))
-    expl_anim['player'].append(image)
+    # loading continuous background music
+    pygame.mixer.music.load('bgmusic.wav')
 
-gun_sound = pygame.mixer.Sound("gunsound.wav")
+    clock.tick(60) # 60 fps cap
 
-# loading different monster death sounds
-monster_sounds = []
-soundslist = ['enemysound1.wav','enemysound2.wav','enemysound3.wav']
-for sound in soundslist:
-    monster_sounds.append(pygame.mixer.Sound(sound))
+    # infinite looping background music
+    pygame.mixer.music.play(loops= -1)
 
-# loading continuous background music
-pygame.mixer.music.load('bgmusic.wav')
+    # initializing score
+    score = 0
 
-clock.tick(60) # 60 fps cap
+    gameOver = True
+    gameExit = False
+    while not gameExit:
+        if gameOver:
+            # resetting sprites after game over
+            global allsprites, enemymobs, bullets
+            allsprites = pygame.sprite.Group()
+            enemymobs = pygame.sprite.Group()
+            bullets = pygame.sprite.Group()
 
-# infinite looping background music
-pygame.mixer.music.play(loops= -1)
+            gameoverscreen(score)
+            gameOver = False
 
-gameOver = True
-gameExit = False
-while not gameExit:
-    if gameOver:
-        gameoverscreen()
-        gameOver = False
-        # initializing score
-        score = 0 
-        # creating sprite groups
-        allsprites = pygame.sprite.Group()
-        enemymobs = pygame.sprite.Group()
-        bullets = pygame.sprite.Group()
+            player = PlayerSprite()
+            allsprites.add(player)
 
-        player = PlayerSprite()
-        allsprites.add(player)
+            # creating list of random number of enemies from 8 to 15 and shuffling for randomness
+            enemycount = list(range(8, 15))
+            random.shuffle(enemycount)
 
-        # creating list of random number of enemies from 8 to 20 and shuffling for randomness
-        enemycount = list(range(8, 20))
-        random.shuffle(enemycount)
+            for i in enemycount:
+                mob = EnemySprite()
+                # updating enemy sprites into allsprites
+                allsprites.add(mob)
+                # adding enemy sprites into sprites group
+                enemymobs.add(mob)
 
-        for i in enemycount:
+            # reset score
+            score = 0
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                # ends program
+                gameExit = True
+        
+        # updating sprites
+        allsprites.update()
+
+        expl_sound = pygame.mixer.Sound('playerdeath.wav')
+
+        # check for player-enemy (circle sprites) sprite collision (creates list)
+        hits = pygame.sprite.spritecollide(player, enemymobs, False, pygame.sprite.collide_circle)
+        if hits:
+            expl_sound.play()
+            # spawn player death explosion
+            player_expl = ExplosionSprites(player.rect.center, 'player')
+            allsprites.add(player_expl)
+            player.hide()
+            player.lives -= 1
+
+        # check for enemy-bullet sprite collision
+        bullethits = pygame.sprite.groupcollide(enemymobs, bullets, True, True)
+        for hits in bullethits:
+            # +100 score per kill
+            score += 100
+
+            # randomly choose and play enemy sounds
+            random.choice(monster_sounds).play()
+            
+            # spawn enemy explosions
+            expl = ExplosionSprites(hits.rect.center, 'enemy')
+            allsprites.add(expl)
+
+            # spawn new enemy mob
             mob = EnemySprite()
-            # updating enemy sprites into allsprites
             allsprites.add(mob)
-            # adding enemy sprites into sprites group
             enemymobs.add(mob)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            # ends program
-            gameExit = True
-    
-    # updating sprites
-    allsprites.update()
+        if player.lives <= 0 and not player_expl.alive():
+            gameOver = True
 
-    # check for player-enemy (circle sprites) sprite collision (creates list)
-    hits = pygame.sprite.spritecollide(player,enemymobs, False, pygame.sprite.collide_circle)
-    if hits:
-        # spawn player death explosion
-        player_expl = ExplosionSprites(player.rect.center, 'player')
-        allsprites.add(player_expl)
-        player.hide()
-        player.lives -= 1
+        # rendering
+        gameDisplay.blit(bg,(0,0))
+        allsprites.draw(gameDisplay)
+        # drawing number of lives on top left of screen
+        displaylives(gameDisplay, 10, 5, player.lives, player.smallimage)
+        # text is score
+        displaytext(gameDisplay, str(score), 30, screen_width * .5, 10)
 
-    # check for enemy-bullet sprite collision
-    bullethits = pygame.sprite.groupcollide(enemymobs,bullets, True, True)
-    for hits in bullethits:
-        # +100 score per kill
-        score += 100
+        # displaying
+        pygame.display.flip()
 
-        # randomly choose and play enemy sounds
-        random.choice(monster_sounds).play()
-        
-        # spawn enemy explosions
-        expl = ExplosionSprites(hits.rect.center, 'enemy')
-        allsprites.add(expl)
+    #required
+    pygame.quit()
+    quit()				#exits python
 
-        # spawn new enemy mob
-        mob = EnemySprite()
-        allsprites.add(mob)
-        enemymobs.add(mob)
-
-    if player.lives == 0 and not player_expl.alive():
-        gameOver = True
-
-    # rendering
-    gameDisplay.blit(bg,(0,0))
-    allsprites.draw(gameDisplay)
-    # drawing number of lives on top left of screen
-    displaylives(gameDisplay, 10, 5, player.lives, player.smallimage)
-    # text is score
-    displaytext(gameDisplay, str(score), 30, screen_width * .5, 10)
-
-    # displaying
-    pygame.display.flip()
-
-#required
-pygame.quit()
-quit()				#exits python
-
+main()
 
