@@ -3,16 +3,15 @@ import time
 import random
 from pygame.locals import *
 
-white = (255, 255, 255)
 red = (255, 0, 0)
 screen_width = 1280
 screen_height = 720
 # free font downloaded from dafont.com
 font_name = 'AmazDooMLeft.ttf'
+# file to store highest score
 scorefilename = 'highscore.txt'
 gameDisplay = pygame.display.set_mode((screen_width,screen_height))
 clock = pygame.time.Clock()
-
 
 # loading and resizing background image
 bg = pygame.image.load('dungeon.bmp')
@@ -37,14 +36,12 @@ expl_anim['player'] = []
 for i in range(15):
     enemy_files = str(i) + '.bmp'
     image = pygame.image.load(enemy_files)
-    image.set_colorkey(white)
     image = pygame.transform.scale(image, (100,100))
     expl_anim['enemy'].append(image)
 
 for i in range(14):
     player_files = 'player' + str(i) + '.bmp'
     image = pygame.image.load(player_files)
-    image.set_colorkey(white)
     image = pygame.transform.scale(image, (200, 200))
     expl_anim['player'].append(image)
 
@@ -63,9 +60,9 @@ def displaylives(surface, x, y, lives, image):
         image_rect.y = y
         surface.blit(image, image_rect)
 
-def gameoverscreen(score):
+def startscreen(score):
     gameDisplay.blit(bg,(0,0))
-    # calling display_text function to display gameover screen
+    # calling display_text function to display start/gameover screen
     displaytext(gameDisplay, "DOOOOOOOOOOOOOOOM!", 120, screen_width / 2, screen_height / 4)
 
     displaytext(gameDisplay, "Left and right arrow keys to move, spacebar to shoot",
@@ -82,10 +79,12 @@ def gameoverscreen(score):
     else:
         displaytext(gameDisplay,"Score:" + str(score), 40, screen_width / 2, screen_height - 290)
         displaytext(gameDisplay,"Highest Score:" + str(highscore), 40, screen_width / 2, screen_height - 250)
+
+    # update display
     pygame.display.flip()
+
     waiting = True
     while waiting:
-        clock.tick(60)
         for event in pygame.event.get():
             if event.type == pygame.KEYUP:
                 waiting = False
@@ -93,7 +92,8 @@ def gameoverscreen(score):
 class PlayerSprite(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-
+        
+        #size of player
         self.width = 160
         self.height = 160
         
@@ -145,6 +145,7 @@ class PlayerSprite(pygame.sprite.Sprite):
         if keys[K_RIGHT]:
             self.speedX = 20
         if keys[K_SPACE]:
+            # disables player shooting when hit
             if self.hidden == False:
                 self.shoot()
         self.rect.x += self.speedX
@@ -180,7 +181,8 @@ class PlayerSprite(pygame.sprite.Sprite):
 class EnemySprite(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-
+        
+        # size of enemies
         self.enemywidth = 140
         self.enemyheight = 130
         
@@ -242,7 +244,6 @@ class BulletSprite(pygame.sprite.Sprite):
     
     def update(self):
         self.rect.y += self.speedY
-
         # if bullet gets past top of screen
         if self.rect.bottom < 0:
             # removes bullet sprite
@@ -291,8 +292,6 @@ def main():
     # loading continuous background music
     pygame.mixer.music.load('bgmusic.wav')
 
-    clock.tick(60) # 60 fps cap
-
     # infinite looping background music
     pygame.mixer.music.play(loops= -1)
 
@@ -302,6 +301,7 @@ def main():
     gameOver = True
     gameExit = False
     while not gameExit:
+        clock.tick(30) # 30 fps lock so enemies move at appropriate speed
         if gameOver:
             # resetting sprites after game over
             global allsprites, enemymobs, bullets
@@ -309,7 +309,7 @@ def main():
             enemymobs = pygame.sprite.Group()
             bullets = pygame.sprite.Group()
 
-            gameoverscreen(score)
+            startscreen(score)
             gameOver = False
 
             player = PlayerSprite()
@@ -326,7 +326,7 @@ def main():
                 # adding enemy sprites into sprites group
                 enemymobs.add(mob)
 
-            # reset score
+            # reset score for new game
             score = 0
 
         for event in pygame.event.get():
@@ -375,10 +375,10 @@ def main():
         allsprites.draw(gameDisplay)
         # drawing number of lives on top left of screen
         displaylives(gameDisplay, 10, 5, player.lives, player.smallimage)
-        # text is score
+        # drawing score at top middle of screen
         displaytext(gameDisplay, str(score), 30, screen_width * .5, 10)
 
-        # displaying
+        # displaying everything
         pygame.display.flip()
 
     #required
