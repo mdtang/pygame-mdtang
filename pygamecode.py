@@ -230,7 +230,7 @@ class EnemySprite(pygame.sprite.Sprite):
             # varying speeds - going left or right
             self.speedX = random.randrange(-2, 2)
             # varying speeds - going down
-            self.speedY = random.randrange(5, 10)
+            self.speedY = random.randrange(8, 12)
 
 
 class BulletSprite(pygame.sprite.Sprite):
