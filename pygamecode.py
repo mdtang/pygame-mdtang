@@ -3,6 +3,7 @@ import time
 import random
 from pygame.locals import *
 
+# red color for font
 red = (255, 0, 0)
 screen_width = 1280
 screen_height = 720
@@ -17,6 +18,7 @@ clock = pygame.time.Clock()
 bg = pygame.image.load('dungeon.bmp')
 bg = pygame.transform.scale(bg,(screen_width,screen_height))
 
+# loading high score file
 scorefile = open(scorefilename, 'w')
 try:
     highscore = int(scorefile.read())
@@ -55,14 +57,14 @@ def displaytext(surface, text, size, x, y):
 def displaylives(surface, x, y, lives, image):
     for i in range(lives):
         image_rect = image.get_rect()
-        # 50 is for the space between each sprite
+        # 50 is for the space between each lives sprite
         image_rect.x = x + 50 * i
         image_rect.y = y
         surface.blit(image, image_rect)
 
 def startscreen(score):
     gameDisplay.blit(bg,(0,0))
-    # calling display_text function to display start/gameover screen
+    # calling display_text function to display text for start/gameover screen
     displaytext(gameDisplay, "DOOOOOOOOOOOOOOOM!", 120, screen_width / 2, screen_height / 4)
 
     displaytext(gameDisplay, "Left and right arrow keys to move, spacebar to shoot",
@@ -72,22 +74,25 @@ def startscreen(score):
 
     if score > highscore:
         displaytext(gameDisplay,"NEW High Score!!!", 40, screen_width / 2, screen_height - 290)
+        # write new high score in file
         scorefile.write(str(highscore))
         global highscore
         highscore = score
         displaytext(gameDisplay,"Score:" + str(score), 40, screen_width / 2, screen_height - 250)
     else:
+        # if player score is not equal or higher than highest score
         displaytext(gameDisplay,"Score:" + str(score), 40, screen_width / 2, screen_height - 290)
         displaytext(gameDisplay,"Highest Score:" + str(highscore), 40, screen_width / 2, screen_height - 250)
 
     # update display
     pygame.display.flip()
 
-    waiting = True
-    while waiting:
+    pausing = True
+    while pausing:
         for event in pygame.event.get():
+            # if any button is released, game starts
             if event.type == pygame.KEYUP:
-                waiting = False
+                pausing = False
 
 class PlayerSprite(pygame.sprite.Sprite):
     def __init__(self):
@@ -132,12 +137,14 @@ class PlayerSprite(pygame.sprite.Sprite):
 
     def update(self):
         self.speedX = 0
-        # hides player for 1 second
+        # hides player for 1 second (1000 milliseconds)
         if self.hidden and pygame.time.get_ticks() - self.hide_timer > 1000:
             self.hidden = False
             # restore player to original location
             self.rect.centerx = screen_width * .5
             self.rect.bottom = screen_height - 10
+
+        # gets the state of all keyboard buttons
         keys = pygame.key.get_pressed()
 
         if keys[K_LEFT]:
@@ -175,7 +182,7 @@ class PlayerSprite(pygame.sprite.Sprite):
         # temporarily hide player when hit
         self.hidden = True
         self.hide_timer = pygame.time.get_ticks()
-        # hide player below screen
+        # hide player below screen - 1000 more than screen height
         self.rect.center = (screen_width * 0.5, screen_height + 1000)
 
 class EnemySprite(pygame.sprite.Sprite):
@@ -191,6 +198,7 @@ class EnemySprite(pygame.sprite.Sprite):
         self.enemylist = ['monster1.gif', 'monster2.gif', 'monster3.gif', 'monster4.gif', 'monster5.gif']
 
         for image in self.enemylist:
+            # converting gifs
             self.enemyimages.append(pygame.image.load(image).convert_alpha())
 
         # randomly choose enemy images
@@ -207,8 +215,8 @@ class EnemySprite(pygame.sprite.Sprite):
         self.rect.x = random.randrange(screen_width - self.rect.width)
         self.rect.y = random.randrange(-100, -40)
 
-        self.speedX = random.randrange(-2,2)
-        self.speedY = random.randrange(3,12)
+        self.speedX = random.randrange(-2, 2)
+        self.speedY = random.randrange(3, 12)
 
 
     def update(self):
@@ -219,9 +227,10 @@ class EnemySprite(pygame.sprite.Sprite):
             self.rect.x = random.randrange(screen_width - self.rect.width)
             # Spawning enemies off screen at random y coordinates
             self.rect.y = random.randrange(-200, -80)
-            # varying speeds for enemy sprites
-            self.speedX = random.randrange(-2,2)
-            self.speedY = random.randrange(5,10)
+            # varying speeds - going left or right
+            self.speedX = random.randrange(-2, 2)
+            # varying speeds - going down
+            self.speedY = random.randrange(5, 10)
 
 
 class BulletSprite(pygame.sprite.Sprite):
@@ -277,8 +286,8 @@ class ExplosionSprites(pygame.sprite.Sprite):
                 self.rect.center = center
 
 def main():
-    pygame.mixer.init()
     pygame.init()
+    pygame.mixer.init()
 
     pygame.display.set_caption('DOOOOOOOOOOOOOOOM!!!!')
 
@@ -315,8 +324,8 @@ def main():
             player = PlayerSprite()
             allsprites.add(player)
 
-            # creating list of random number of enemies from 8 to 15 and shuffling for randomness
-            enemycount = list(range(8, 15))
+            # creating list of random number of enemies from 15 to 20 and shuffling for randomness
+            enemycount = list(range(15, 20))
             random.shuffle(enemycount)
 
             for i in enemycount:
@@ -366,7 +375,8 @@ def main():
             mob = EnemySprite()
             allsprites.add(mob)
             enemymobs.add(mob)
-
+        
+        # ends game if player lives are depleted and player explosion are gone
         if player.lives <= 0 and not player_expl.alive():
             gameOver = True
 
