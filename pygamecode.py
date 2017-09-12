@@ -302,7 +302,7 @@ def main():
     pygame.mixer.music.load('bgmusic.wav')
 
     # infinite looping background music
-    pygame.mixer.music.play(loops= -1)
+    pygame.mixer.music.play()
 
     # initializing score
     score = 0
